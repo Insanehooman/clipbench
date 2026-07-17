@@ -428,7 +428,7 @@ async function ensureFfmpeg() {
     els.progressFill.style.width = pct + '%';
     els.progressLabel.textContent = `rendering… ${pct}%`;
   });
-  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm';
   els.progressLabel.textContent = 'loading engine (first time only, ~30MB)…';
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
