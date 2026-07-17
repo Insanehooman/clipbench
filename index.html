@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clipbench — turn raw footage into vertical clips, free</title>
+<meta name="description" content="Free, in-browser tool that trims dead air, crops to 9:16, and burns captions onto your video. Nothing uploads to a server.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="grain"></div>
+
+<header class="site-header">
+  <div class="wordmark">
+    <span class="wordmark-mark">⟡</span>
+    Clipbench
+  </div>
+  <p class="tagline">raw footage in — vertical, captioned clips out. runs on your machine, not ours.</p>
+</header>
+
+<main id="app">
+
+  <!-- STAGE 0: UPLOAD -->
+  <section id="stage-upload" class="stage stage--active">
+    <div class="bench-panel upload-panel">
+      <div class="upload-drop" id="dropZone">
+        <div class="upload-icon">▤</div>
+        <p class="upload-title">Drop a clip on the bench</p>
+        <p class="upload-sub">MP4, MOV, or WebM · processed entirely in this browser tab, never leaves your device</p>
+        <label class="btn btn-primary" for="fileInput">Choose a file</label>
+        <input type="file" id="fileInput" accept="video/*" hidden>
+      </div>
+      <div class="upload-note">
+        <p><strong>What this does:</strong> trims silence, crops to 9:16, and lets you burn in captions. It won't do AI hook-detection or auto-transcription the way paid tools do — this is the free, honest version of that workflow.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 1: WORKBENCH -->
+  <section id="stage-bench" class="stage">
+
+    <div class="bench-grid">
+
+      <!-- Preview column -->
+      <div class="bench-col bench-col--preview">
+        <div class="panel-label"><span class="chip">01</span> Preview &amp; crop frame</div>
+        <div class="preview-wrap" id="previewWrap">
+          <video id="previewVideo" playsinline muted></video>
+          <div class="crop-frame" id="cropFrame"></div>
+          <div class="caption-preview" id="captionPreview"></div>
+        </div>
+        <div class="transport">
+          <button class="btn btn-ghost" id="playBtn">▶ play</button>
+          <span class="time-readout" id="timeReadout">0:00 / 0:00</span>
+        </div>
+        <div class="crop-controls">
+          <label>Crop position <span id="cropXLabel">center</span></label>
+          <input type="range" id="cropSlider" min="0" max="100" value="50">
+        </div>
+      </div>
+
+      <!-- Tools column -->
+      <div class="bench-col bench-col--tools">
+
+        <div class="bench-panel">
+          <div class="panel-label"><span class="chip">02</span> Trim dead air</div>
+          <div class="control-row">
+            <label>Silence threshold <span id="threshLabel">−35 dB</span></label>
+            <input type="range" id="threshSlider" min="-60" max="-15" value="-35">
+          </div>
+          <div class="control-row">
+            <label>Minimum gap <span id="gapLabel">0.4s</span></label>
+            <input type="range" id="gapSlider" min="0.1" max="2" step="0.1" value="0.4">
+          </div>
+          <button class="btn btn-secondary" id="analyzeBtn">Scan for silence</button>
+          <div class="splice-ruler-wrap">
+            <canvas id="spliceCanvas" height="72"></canvas>
+            <p class="hint">Click a cut region to keep it. Kept = oak, cut = hatched red.</p>
+          </div>
+          <div class="stat-row" id="trimStats"></div>
+        </div>
+
+        <div class="bench-panel">
+          <div class="panel-label"><span class="chip">03</span> Captions</div>
+          <div class="caption-add-row">
+            <button class="btn btn-secondary" id="addCaptionBtn">+ mark caption at current time</button>
+          </div>
+          <div id="captionList" class="caption-list"></div>
+        </div>
+
+        <div class="bench-panel render-panel">
+          <div class="panel-label"><span class="chip">04</span> Render</div>
+          <button class="btn btn-primary btn-render" id="renderBtn">Render vertical clip</button>
+          <div class="render-progress" id="renderProgress" hidden>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <p class="progress-label" id="progressLabel">warming up the engine…</p>
+          </div>
+          <details class="log-details">
+            <summary>engine log</summary>
+            <pre id="logOutput"></pre>
+          </details>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 2: RESULT -->
+  <section id="stage-result" class="stage">
+    <div class="bench-panel result-panel">
+      <div class="panel-label"><span class="chip">✓</span> Done</div>
+      <video id="resultVideo" controls playsinline></video>
+      <div class="result-actions">
+        <a id="downloadLink" class="btn btn-primary" download="clip.mp4">Download clip.mp4</a>
+        <button class="btn btn-ghost" id="startOverBtn">Start over</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Clipbench is a static page — host it anywhere (Netlify, Vercel, GitHub Pages, a plain S3 bucket). No backend, no video ever touches a server.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
