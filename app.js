@@ -402,7 +402,7 @@ function mapToTrimmed(t, keepList) {
 // ------------------------------------------------------------
 function escDrawtext(text) {
   return text
-    .replace(/\\/g, '\\\\\\\\')
+    .replace(/\\/g, '\\\\')
     .replace(/:/g, '\\:')
     .replace(/'/g, "\u2019")
     .replace(/%/g, '\\%');
@@ -453,7 +453,7 @@ async function render() {
     const inputName = `input.${inExt}`;
     await ffmpeg.writeFile(inputName, await fetchFile(state.file));
 
-    const fontURL = 'https://cdn.jsdelivr.net/fontsource/fonts/space-grotesk@latest/latin-700-normal.ttf';
+    const fontURL = 'https://raw.githubusercontent.com/floriankarsten/space-grotesk/master/fonts/otf/SpaceGrotesk-Regular.otf';
     await ffmpeg.writeFile('font.ttf', await fetchFile(fontURL));
 
     const keepList = buildKeepList();
@@ -480,7 +480,7 @@ async function render() {
       const me = mapToTrimmed(cap.end, keepList);
       if (me <= ms) continue;
       const safeText = escDrawtext(cap.text.trim());
-      drawtextChain += `,drawtext=fontfile=font.ttf:text='${safeText}':fontsize=58:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=h-280:enable='between(t\\,${ms.toFixed(3)}\\,${me.toFixed(3)})'`;
+      drawtextChain += `,drawtext=fontfile=font.ttf:text='${safeText}':fontsize=58:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=h-280:enable='between(t,${ms.toFixed(3)},${me.toFixed(3)})'`;
     }
 
     const filterComplex =
@@ -505,7 +505,8 @@ async function render() {
     showStage('result');
   } catch (err) {
     console.error(err);
-    alert('Render failed — check the engine log for details. Common causes: unsupported codec in the source file, or an out-of-range caption/crop value.');
+    els.logOutput.textContent += `\nERROR: ${err.message || err}\n`;
+    alert(`Render failed: ${err.message || err}\n\nCheck the engine log panel for the full detail.`);
   } finally {
     els.renderBtn.disabled = false;
     els.renderProgress.hidden = true;
