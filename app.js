@@ -433,6 +433,7 @@ async function ensureFfmpeg() {
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    classWorkerURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js',
   });
   state.ffmpeg = ffmpeg;
   state.ffmpegLoaded = true;
