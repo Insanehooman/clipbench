@@ -1,3 +1,6 @@
+import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+import { fetchFile, toBlobURL } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
+
 // ============================================================
 // Clipbench — client-side clip tool
 // Everything below runs in the visitor's browser. The only
@@ -415,8 +418,6 @@ els.renderBtn.addEventListener('click', render);
 
 async function ensureFfmpeg() {
   if (state.ffmpegLoaded) return state.ffmpeg;
-  const { FFmpeg } = FFmpegWASM;
-  const { toBlobURL } = FFmpegUtil;
   const ffmpeg = new FFmpeg();
   ffmpeg.on('log', ({ message }) => {
     els.logOutput.textContent += message + '\n';
@@ -445,7 +446,6 @@ async function render() {
   els.progressFill.style.width = '0%';
   els.logOutput.textContent = '';
   try {
-    const { fetchFile } = FFmpegUtil;
     const ffmpeg = await ensureFfmpeg();
 
     els.progressLabel.textContent = 'preparing files…';
