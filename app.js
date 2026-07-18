@@ -20,7 +20,7 @@ const state = {
   cropXRatio: 0.5,      // 0..1, center of crop window horizontally
   trimEnabled: true,
   faceModel: null,
-  transcriber: null,
+  transcribeWorker: null,
   ffmpeg: null,
   ffmpegLoaded: false,
 };
@@ -505,13 +505,11 @@ async function decodeAudioForWhisper(file) {
   return rendered.getChannelData(0);
 }
 
-async function ensureTranscriber(progressCb) {
-  if (state.transcriber) return state.transcriber;
-  const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');
-  state.transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small', {
-    progress_callback: progressCb,
-  });
-  return state.transcriber;
+function getTranscribeWorker() {
+  if (!state.transcribeWorker) {
+    state.transcribeWorker = new Worker(new URL('transcribe-worker.js', import.meta.url), { type: 'module' });
+  }
+  return state.transcribeWorker;
 }
 
 els.genCaptionsBtn.addEventListener('click', async () => {
@@ -522,25 +520,28 @@ els.genCaptionsBtn.addEventListener('click', async () => {
   els.captionGenLabel.textContent = 'preparing audio…';
   try {
     const audioData = await decodeAudioForWhisper(state.file);
-
-    els.captionGenLabel.textContent = 'loading speech model (first time only)…';
-    const transcriber = await ensureTranscriber((p) => {
-      if (p.status === 'progress' && p.total) {
-        const pct = Math.round((p.loaded / p.total) * 100);
-        els.captionGenFill.style.width = pct + '%';
-        els.captionGenLabel.textContent = `downloading model… ${pct}%`;
-      }
-    });
-
-    els.captionGenFill.style.width = '100%';
-    els.captionGenLabel.textContent = 'transcribing… this can take a while for longer clips';
     const lang = els.captionLangSelect.value;
-    const result = await transcriber(audioData, {
-      return_timestamps: true,
-      chunk_length_s: 30,
-      stride_length_s: 5,
-      language: lang === 'auto' ? undefined : lang,
-      task: 'transcribe',
+    els.captionGenLabel.textContent = 'loading speech model (first time only)…';
+    const worker = getTranscribeWorker();
+
+    const result = await new Promise((resolve, reject) => {
+      worker.onmessage = (e) => {
+        const msg = e.data;
+        if (msg.type === 'progress') {
+          const pct = Math.round((msg.loaded / msg.total) * 100);
+          els.captionGenFill.style.width = pct + '%';
+          els.captionGenLabel.textContent = `downloading model… ${pct}%`;
+        } else if (msg.type === 'status') {
+          els.captionGenFill.style.width = '100%';
+          els.captionGenLabel.textContent = 'transcribing… this can take a while for longer clips (page stays usable)';
+        } else if (msg.type === 'done') {
+          resolve(msg.result);
+        } else if (msg.type === 'error') {
+          reject(new Error(msg.message));
+        }
+      };
+      worker.onerror = (e) => reject(e.error || new Error(e.message || 'worker error'));
+      worker.postMessage({ audioData, language: lang }, [audioData.buffer]);
     });
 
     const chunks = result.chunks || [];
