@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -51,7 +51,7 @@
       <div class="bench-col bench-col--preview">
         <div class="panel-label"><span class="chip">SYS.01</span> Preview &amp; crop frame</div>
         <div class="preview-wrap" id="previewWrap">
-          <video id="previewVideo" playsinline muted></video>
+          <video id="previewVideo" playsinline></video>
           <div class="crop-frame" id="cropFrame"></div>
           <div class="caption-preview" id="captionPreview"></div>
         </div>
@@ -62,6 +62,8 @@
         <div class="crop-controls">
           <label>Crop position <span id="cropXLabel">center</span></label>
           <input type="range" id="cropSlider" min="0" max="100" value="50">
+          <button class="btn btn-secondary" id="faceDetectBtn">◎ Auto-detect face position</button>
+          <p class="hint" id="faceDetectHint">Samples a few frames and centers the crop on the largest face found.</p>
         </div>
       </div>
 
@@ -97,6 +99,29 @@
 
         <div class="bench-panel">
           <div class="panel-label"><span class="chip">SYS.03</span> Captions</div>
+          <div class="control-row">
+            <label>Speech language</label>
+            <select id="captionLangSelect">
+              <option value="auto">Auto-detect</option>
+              <option value="english" selected>English</option>
+              <option value="hindi">Hindi</option>
+              <option value="tamil">Tamil</option>
+              <option value="telugu">Telugu</option>
+              <option value="bengali">Bengali</option>
+              <option value="marathi">Marathi</option>
+              <option value="gujarati">Gujarati</option>
+              <option value="kannada">Kannada</option>
+              <option value="malayalam">Malayalam</option>
+              <option value="punjabi">Punjabi</option>
+              <option value="urdu">Urdu</option>
+            </select>
+          </div>
+          <button class="btn btn-secondary" id="genCaptionsBtn">◈ Auto-generate captions (beta)</button>
+          <div class="render-progress" id="captionGenProgress" hidden>
+            <div class="progress-bar"><div class="progress-fill" id="captionGenFill"></div></div>
+            <p class="progress-label" id="captionGenLabel"></p>
+          </div>
+          <p class="hint">Runs a speech-recognition model entirely in this tab — first use downloads it (a few hundred MB, cached after that), and it takes a bit to process. Accuracy varies by audio quality and language; always spot-check the result.</p>
           <div class="caption-add-row">
             <button class="btn btn-secondary" id="addCaptionBtn">+ mark caption at current time</button>
           </div>
@@ -138,6 +163,8 @@
   <p>Clipbench is a static page — host it anywhere (Netlify, Vercel, GitHub Pages, a plain S3 bucket). No backend, no video ever touches a server.</p>
 </footer>
 
-<script type="module" src="app.js?v=8"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.js"></script>
+<script type="module" src="app.js?v=9"></script>
 </body>
 </html>
