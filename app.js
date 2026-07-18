@@ -619,6 +619,26 @@ function escDrawtext(text) {
     .replace(/%/g, '\\%');
 }
 
+// ffmpeg's drawtext does not wrap long lines on its own — a caption longer
+// than a short phrase would otherwise render as one line and spill past the
+// edges of the 1080px-wide frame. Wrap it ourselves before handing it over.
+function wrapCaptionText(text, maxCharsPerLine = 26) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > maxCharsPerLine && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [text];
+}
+
 // ------------------------------------------------------------
 // Render pipeline
 // ------------------------------------------------------------
@@ -688,8 +708,12 @@ async function render() {
       const ms = mapToTrimmed(cap.start, keepList);
       const me = mapToTrimmed(cap.end, keepList);
       if (me <= ms) continue;
-      const safeText = escDrawtext(cap.text.trim());
-      drawtextChain += `,drawtext=fontfile=font.ttf:text='${safeText}':fontsize=58:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=h-280:enable='between(t,${ms.toFixed(3)},${me.toFixed(3)})'`;
+      const rawLines = wrapCaptionText(cap.text.trim());
+      const escapedLines = rawLines.map(l => escDrawtext(l));
+      const multilineText = escapedLines.join('\\n');
+      const lineHeightPx = 67; // approx line height for fontsize 58
+      const yExpr = `h-${280 + (rawLines.length - 1) * lineHeightPx}`;
+      drawtextChain += `,drawtext=fontfile=font.ttf:text='${multilineText}':fontsize=58:fontcolor=white:borderw=4:bordercolor=black:line_spacing=6:x=(w-text_w)/2:y=${yExpr}:enable='between(t,${ms.toFixed(3)},${me.toFixed(3)})'`;
     }
 
     const filterComplex =
