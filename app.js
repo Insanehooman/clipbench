@@ -698,16 +698,29 @@ function escDrawtext(text) {
     .replace(/%/g, '\\%');
 }
 
-// ffmpeg's drawtext does not wrap long lines on its own — a caption longer
-// than a short phrase would otherwise render as one line and spill past the
-// edges of the 1080px-wide frame. Wrap it ourselves before handing it over.
-function wrapCaptionText(text, maxCharsPerLine = 26) {
+// Measures text with the ACTUAL font being burned in, so wrapping is
+// pixel-accurate regardless of how wide a script's glyphs are (Latin vs
+// Devanagari vs Tamil etc. all have very different average character widths).
+async function loadFontFaceForMeasuring(fontURL) {
+  const buf = await (await fetch(fontURL)).arrayBuffer();
+  const familyName = 'caption-measure-font';
+  // remove any previously loaded instance to avoid piling up FontFace objects
+  for (const f of Array.from(document.fonts)) {
+    if (f.family === familyName) document.fonts.delete(f);
+  }
+  const face = new FontFace(familyName, buf);
+  await face.load();
+  document.fonts.add(face);
+  return familyName;
+}
+
+function wrapTextByWidth(ctx, text, maxWidthPx) {
   const words = text.split(/\s+/).filter(Boolean);
   const lines = [];
   let current = '';
   for (const word of words) {
     const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length > maxCharsPerLine && current) {
+    if (ctx.measureText(candidate).width > maxWidthPx && current) {
       lines.push(current);
       current = word;
     } else {
@@ -809,13 +822,20 @@ async function render() {
     const borderW = Math.max(2, Math.round(4 * scaleFactor));
     const lineHeightPx = Math.round(67 * scaleFactor);
     const bottomMargin = Math.round(280 * scaleFactor);
+
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+    const measureFamily = await loadFontFaceForMeasuring(fontURL);
+    measureCtx.font = `${fontSize}px "${measureFamily}"`;
+    const maxTextWidthPx = quality.width * 0.86; // ~7% margin each side
+
     let drawtextChain = '';
     for (const cap of state.captions) {
       if (!cap.text.trim()) continue;
       const ms = mapToTrimmed(cap.start, keepList);
       const me = mapToTrimmed(cap.end, keepList);
       if (me <= ms) continue;
-      const rawLines = wrapCaptionText(cap.text.trim());
+      const rawLines = wrapTextByWidth(measureCtx, cap.text.trim(), maxTextWidthPx);
       const escapedLines = rawLines.map(l => escDrawtext(l));
       const multilineText = escapedLines.join('\\n');
       const yExpr = `h-${bottomMargin + (rawLines.length - 1) * lineHeightPx}`;
