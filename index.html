@@ -130,6 +130,14 @@
 
         <div class="bench-panel render-panel">
           <div class="panel-label"><span class="chip">SYS.04</span> Render</div>
+          <div class="control-row">
+            <label>Output quality</label>
+            <select id="qualitySelect">
+              <option value="high">High — 1080×1920, larger file, slower</option>
+              <option value="balanced" selected>Balanced — 1080×1920, standard</option>
+              <option value="small">Small file — 720×1280, faster</option>
+            </select>
+          </div>
           <button class="btn btn-primary btn-render" id="renderBtn">Render vertical clip</button>
           <div class="render-progress" id="renderProgress" hidden>
             <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -165,6 +173,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.umd.js"></script>
-<script type="module" src="app.js?v=13"></script>
+<script type="module" src="app.js?v=14"></script>
 </body>
 </html>
