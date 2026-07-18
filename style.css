@@ -325,6 +325,8 @@ select:focus { outline: none; border-color: var(--cyan); }
 .caption-card .del-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 0 0.3rem; }
 .caption-empty { color: var(--ink-dim); font-size: 0.8rem; font-style: italic; font-family: var(--mono); }
 
+.translate-section { margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+
 .render-progress { margin-top: 1rem; }
 .progress-bar {
   height: 10px; background: var(--void); border-radius: 2px; overflow: hidden;
