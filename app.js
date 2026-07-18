@@ -49,6 +49,7 @@ const els = {
   captionGenFill: $('captionGenFill'),
   captionGenLabel: $('captionGenLabel'),
   qualitySelect: $('qualitySelect'),
+  captionScriptSelect: $('captionScriptSelect'),
   translateFromSelect: $('translateFromSelect'),
   translateToSelect: $('translateToSelect'),
   translateCaptionsBtn: $('translateCaptionsBtn'),
@@ -582,6 +583,10 @@ els.genCaptionsBtn.addEventListener('click', async () => {
 
     state.captions = [...state.captions, ...generated].sort((a, b) => a.start - b.start);
     renderCaptionList();
+    const effectiveLang = els.translateToEnglishToggle.checked ? 'english' : lang;
+    if (effectiveLang !== 'auto' && [...els.captionScriptSelect.options].some(o => o.value === effectiveLang)) {
+      els.captionScriptSelect.value = effectiveLang;
+    }
     els.captionGenLabel.textContent = `done — ${generated.length} caption lines generated. Review and edit as needed.`;
   } catch (err) {
     console.error(err);
@@ -645,6 +650,7 @@ els.translateCaptionsBtn.addEventListener('click', async () => {
 
     state.captions.forEach((c, i) => { if (results[i] != null) c.text = results[i]; });
     renderCaptionList();
+    els.captionScriptSelect.value = els.translateToSelect.value;
     els.translateLabel.textContent = `done — ${results.length} lines translated. Review and edit as needed.`;
   } catch (err) {
     console.error(err);
@@ -755,7 +761,23 @@ async function render() {
     const inputName = `input.${inExt}`;
     await ffmpeg.writeFile(inputName, await fetchFile(state.file));
 
-    const fontURL = 'https://raw.githubusercontent.com/floriankarsten/space-grotesk/master/fonts/otf/SpaceGrotesk-Regular.otf';
+    const scriptFontMap = {
+      hindi: 'vendor/fonts/devanagari.ttf',
+      marathi: 'vendor/fonts/devanagari.ttf',
+      tamil: 'vendor/fonts/tamil.ttf',
+      telugu: 'vendor/fonts/telugu.ttf',
+      bengali: 'vendor/fonts/bengali.ttf',
+      gujarati: 'vendor/fonts/gujarati.ttf',
+      kannada: 'vendor/fonts/kannada.ttf',
+      malayalam: 'vendor/fonts/malayalam.ttf',
+      punjabi: 'vendor/fonts/gurmukhi.ttf',
+      urdu: 'vendor/fonts/urdu.ttf',
+    };
+    const captionScript = els.captionScriptSelect.value;
+    const scriptFontPath = scriptFontMap[captionScript];
+    const fontURL = scriptFontPath
+      ? new URL(scriptFontPath, import.meta.url).href
+      : 'https://raw.githubusercontent.com/floriankarsten/space-grotesk/master/fonts/otf/SpaceGrotesk-Regular.otf';
     await ffmpeg.writeFile('font.ttf', await fetchFile(fontURL));
 
     const keepList = buildKeepList();
