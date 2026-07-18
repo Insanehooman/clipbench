@@ -21,6 +21,7 @@ const state = {
   trimEnabled: true,
   faceModel: null,
   transcribeWorker: null,
+  translateWorker: null,
   ffmpeg: null,
   ffmpegLoaded: false,
 };
@@ -42,11 +43,18 @@ const els = {
   cropXLabel: $('cropXLabel'),
   faceDetectBtn: $('faceDetectBtn'),
   captionLangSelect: $('captionLangSelect'),
+  translateToEnglishToggle: $('translateToEnglishToggle'),
   genCaptionsBtn: $('genCaptionsBtn'),
   captionGenProgress: $('captionGenProgress'),
   captionGenFill: $('captionGenFill'),
   captionGenLabel: $('captionGenLabel'),
   qualitySelect: $('qualitySelect'),
+  translateFromSelect: $('translateFromSelect'),
+  translateToSelect: $('translateToSelect'),
+  translateCaptionsBtn: $('translateCaptionsBtn'),
+  translateProgress: $('translateProgress'),
+  translateFill: $('translateFill'),
+  translateLabel: $('translateLabel'),
   threshSlider: $('threshSlider'),
   threshLabel: $('threshLabel'),
   gapSlider: $('gapSlider'),
@@ -558,7 +566,8 @@ els.genCaptionsBtn.addEventListener('click', async () => {
         }
       };
       worker.onerror = (e) => reject(e.error || new Error(e.message || 'worker error'));
-      worker.postMessage({ audioData, language: lang }, [audioData.buffer]);
+      const task = els.translateToEnglishToggle.checked ? 'translate' : 'transcribe';
+      worker.postMessage({ audioData, language: lang, task }, [audioData.buffer]);
     });
 
     const chunks = result.chunks || [];
@@ -580,6 +589,69 @@ els.genCaptionsBtn.addEventListener('click', async () => {
   } finally {
     els.genCaptionsBtn.disabled = false;
     setTimeout(() => { els.captionGenProgress.hidden = true; }, 3000);
+  }
+});
+
+// ------------------------------------------------------------
+// Caption translation (M2M100, runs fully client-side)
+// ------------------------------------------------------------
+const M2M_LANG_CODES = {
+  english: 'en', hindi: 'hi', tamil: 'ta', telugu: 'te', bengali: 'bn',
+  marathi: 'mr', gujarati: 'gu', kannada: 'kn', malayalam: 'ml',
+  punjabi: 'pa', urdu: 'ur',
+};
+
+function getTranslateWorker() {
+  if (!state.translateWorker) {
+    state.translateWorker = new Worker(new URL('translate-worker.js', import.meta.url), { type: 'module' });
+  }
+  return state.translateWorker;
+}
+
+els.translateCaptionsBtn.addEventListener('click', async () => {
+  if (!state.captions.length) {
+    alert('No captions to translate yet — add some manually or auto-generate them first.');
+    return;
+  }
+  els.translateCaptionsBtn.disabled = true;
+  els.translateProgress.hidden = false;
+  els.translateFill.style.width = '0%';
+  els.translateLabel.textContent = 'loading translation model (first time only)…';
+  try {
+    const srcLang = M2M_LANG_CODES[els.translateFromSelect.value];
+    const tgtLang = M2M_LANG_CODES[els.translateToSelect.value];
+    const texts = state.captions.map(c => c.text);
+    const worker = getTranslateWorker();
+
+    const results = await new Promise((resolve, reject) => {
+      worker.onmessage = (e) => {
+        const msg = e.data;
+        if (msg.type === 'progress') {
+          const pct = Math.round((msg.loaded / msg.total) * 100);
+          els.translateFill.style.width = pct + '%';
+          els.translateLabel.textContent = `downloading model… ${pct}%`;
+        } else if (msg.type === 'status') {
+          els.translateFill.style.width = '100%';
+          els.translateLabel.textContent = 'translating… (page stays usable)';
+        } else if (msg.type === 'done') {
+          resolve(msg.results);
+        } else if (msg.type === 'error') {
+          reject(new Error(msg.message));
+        }
+      };
+      worker.onerror = (e) => reject(e.error || new Error(e.message || 'worker error'));
+      worker.postMessage({ texts, srcLang, tgtLang });
+    });
+
+    state.captions.forEach((c, i) => { if (results[i] != null) c.text = results[i]; });
+    renderCaptionList();
+    els.translateLabel.textContent = `done — ${results.length} lines translated. Review and edit as needed.`;
+  } catch (err) {
+    console.error(err);
+    els.translateLabel.textContent = `failed: ${err.message || err}`;
+  } finally {
+    els.translateCaptionsBtn.disabled = false;
+    setTimeout(() => { els.translateProgress.hidden = true; }, 3000);
   }
 });
 
