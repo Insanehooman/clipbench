@@ -152,13 +152,29 @@ function renderCropFrame() {
     dispH = wrapRect.height; dispW = dispH * srcRatio;
     offY = 0; offX = (wrapRect.width - dispW) / 2;
   }
-  const cropDispW = dispH * (9 / 16);
-  const maxX = dispW - cropDispW;
-  const left = offX + state.cropXRatio * maxX;
-  els.cropFrame.style.left = `${left}px`;
-  els.cropFrame.style.width = `${cropDispW}px`;
-  els.cropFrame.style.top = `${offY}px`;
-  els.cropFrame.style.height = `${dispH}px`;
+
+  const isLandscape = state.videoWidth / state.videoHeight > 9 / 16;
+  let capLeft, capWidth, capTop, capHeight;
+
+  if (isLandscape) {
+    const cropDispW = dispH * (9 / 16);
+    const maxX = dispW - cropDispW;
+    const left = offX + state.cropXRatio * maxX;
+    els.cropFrame.style.left = `${left}px`;
+    els.cropFrame.style.width = `${cropDispW}px`;
+    els.cropFrame.style.top = `${offY}px`;
+    els.cropFrame.style.height = `${dispH}px`;
+    capLeft = left; capWidth = cropDispW; capTop = offY; capHeight = dispH;
+  } else {
+    // source is already ~9:16 or narrower — the whole displayed frame is what renders
+    capLeft = offX; capWidth = dispW; capTop = offY; capHeight = dispH;
+  }
+
+  // Match ffmpeg's drawtext placement: text sits at y = h-280 out of a
+  // 1080x1920 render (~85.4% down from the top), centered with ~8% side margin.
+  els.captionPreview.style.left = `${capLeft + capWidth * 0.08}px`;
+  els.captionPreview.style.width = `${capWidth * 0.84}px`;
+  els.captionPreview.style.top = `${capTop + capHeight * 0.84}px`;
 }
 window.addEventListener('resize', renderCropFrame);
 
