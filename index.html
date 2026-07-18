@@ -7,19 +7,21 @@
 <meta name="description" content="Free, in-browser tool that trims dead air, crops to 9:16, and burns captions onto your video. Nothing uploads to a server.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="grain"></div>
+<div class="scan-grid"></div>
+<div class="scanline"></div>
 
 <header class="site-header">
   <div class="wordmark">
-    <span class="wordmark-mark">⟡</span>
-    Clipbench
+    <span class="wordmark-mark">◈</span>
+    CLIPBENCH
+    <span class="status-dot" title="engine idle"></span>
   </div>
-  <p class="tagline">raw footage in — vertical, captioned clips out. runs on your machine, not ours.</p>
+  <p class="tagline">// raw footage in — vertical, captioned clips out. runs on your machine, not ours.</p>
 </header>
 
 <main id="app">
@@ -47,7 +49,7 @@
 
       <!-- Preview column -->
       <div class="bench-col bench-col--preview">
-        <div class="panel-label"><span class="chip">01</span> Preview &amp; crop frame</div>
+        <div class="panel-label"><span class="chip">SYS.01</span> Preview &amp; crop frame</div>
         <div class="preview-wrap" id="previewWrap">
           <video id="previewVideo" playsinline muted></video>
           <div class="crop-frame" id="cropFrame"></div>
@@ -67,7 +69,7 @@
       <div class="bench-col bench-col--tools">
 
         <div class="bench-panel">
-          <div class="panel-label"><span class="chip">02</span> Trim dead air</div>
+          <div class="panel-label"><span class="chip">SYS.02</span> Trim dead air</div>
           <div class="control-row">
             <label>Silence threshold <span id="threshLabel">−35 dB</span></label>
             <input type="range" id="threshSlider" min="-60" max="-15" value="-35">
@@ -85,7 +87,7 @@
         </div>
 
         <div class="bench-panel">
-          <div class="panel-label"><span class="chip">03</span> Captions</div>
+          <div class="panel-label"><span class="chip">SYS.03</span> Captions</div>
           <div class="caption-add-row">
             <button class="btn btn-secondary" id="addCaptionBtn">+ mark caption at current time</button>
           </div>
@@ -93,7 +95,7 @@
         </div>
 
         <div class="bench-panel render-panel">
-          <div class="panel-label"><span class="chip">04</span> Render</div>
+          <div class="panel-label"><span class="chip">SYS.04</span> Render</div>
           <button class="btn btn-primary btn-render" id="renderBtn">Render vertical clip</button>
           <div class="render-progress" id="renderProgress" hidden>
             <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -112,7 +114,7 @@
   <!-- STAGE 2: RESULT -->
   <section id="stage-result" class="stage">
     <div class="bench-panel result-panel">
-      <div class="panel-label"><span class="chip">✓</span> Done</div>
+      <div class="panel-label"><span class="chip">DONE</span> Output</div>
       <video id="resultVideo" controls playsinline></video>
       <div class="result-actions">
         <a id="downloadLink" class="btn btn-primary" download="clip.mp4">Download clip.mp4</a>
@@ -127,6 +129,6 @@
   <p>Clipbench is a static page — host it anywhere (Netlify, Vercel, GitHub Pages, a plain S3 bucket). No backend, no video ever touches a server.</p>
 </footer>
 
-<script type="module" src="app.js?v=6"></script>
+<script type="module" src="app.js?v=7"></script>
 </body>
 </html>
