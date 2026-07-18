@@ -354,6 +354,9 @@ select:focus { outline: none; border-color: var(--cyan); }
   text-align: center; padding: 2rem; color: var(--ink-dim); font-family: var(--mono);
   font-size: 0.7rem; border-top: 1px solid var(--line); position: relative; z-index: 1;
 }
+.site-footer strong { color: var(--ink); }
+.site-footer a { color: var(--cyan); text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
