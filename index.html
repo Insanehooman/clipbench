@@ -178,6 +178,22 @@
         <div class="bench-panel render-panel">
           <div class="panel-label"><span class="chip">SYS.04</span> Render</div>
           <div class="control-row">
+            <label>Caption script (for correct rendering)</label>
+            <select id="captionScriptSelect">
+              <option value="english" selected>English / Latin</option>
+              <option value="hindi">Hindi (Devanagari)</option>
+              <option value="marathi">Marathi (Devanagari)</option>
+              <option value="tamil">Tamil</option>
+              <option value="telugu">Telugu</option>
+              <option value="bengali">Bengali</option>
+              <option value="gujarati">Gujarati</option>
+              <option value="kannada">Kannada</option>
+              <option value="malayalam">Malayalam</option>
+              <option value="punjabi">Punjabi (Gurmukhi)</option>
+              <option value="urdu">Urdu</option>
+            </select>
+          </div>
+          <div class="control-row">
             <label>Output quality</label>
             <select id="qualitySelect">
               <option value="high">High — 1080×1920, larger file, slower</option>
@@ -220,6 +236,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.umd.js"></script>
-<script type="module" src="app.js?v=15"></script>
+<script type="module" src="app.js?v=16"></script>
 </body>
 </html>
