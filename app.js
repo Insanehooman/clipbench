@@ -19,6 +19,8 @@ const state = {
   captions: [],        // [{id,start,end,text}]
   cropXRatio: 0.5,      // 0..1, center of crop window horizontally
   trimEnabled: true,
+  faceModel: null,
+  transcriber: null,
   ffmpeg: null,
   ffmpegLoaded: false,
 };
@@ -38,6 +40,12 @@ const els = {
   timeReadout: $('timeReadout'),
   cropSlider: $('cropSlider'),
   cropXLabel: $('cropXLabel'),
+  faceDetectBtn: $('faceDetectBtn'),
+  captionLangSelect: $('captionLangSelect'),
+  genCaptionsBtn: $('genCaptionsBtn'),
+  captionGenProgress: $('captionGenProgress'),
+  captionGenFill: $('captionGenFill'),
+  captionGenLabel: $('captionGenLabel'),
   threshSlider: $('threshSlider'),
   threshLabel: $('threshLabel'),
   gapSlider: $('gapSlider'),
@@ -173,6 +181,82 @@ window.addEventListener('mousemove', (e) => {
   state.cropXRatio = ratio;
   els.cropSlider.value = Math.round(ratio * 100);
   renderCropFrame();
+});
+
+// ------------------------------------------------------------
+// Face-detect auto-crop (BlazeFace, runs fully client-side)
+// ------------------------------------------------------------
+function seekTo(video, t) {
+  return new Promise((resolve) => {
+    const target = Math.max(0, Math.min(t, state.duration - 0.05));
+    const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
+    video.addEventListener('seeked', onSeeked);
+    video.currentTime = target;
+  });
+}
+
+async function ensureBlazeface() {
+  if (state.faceModel) return state.faceModel;
+  state.faceModel = await blazeface.load();
+  return state.faceModel;
+}
+
+els.faceDetectBtn.addEventListener('click', async () => {
+  if (!state.file) return;
+  els.faceDetectBtn.disabled = true;
+  const originalLabel = els.faceDetectBtn.textContent;
+  els.faceDetectBtn.textContent = 'loading face model…';
+  const video = els.previewVideo;
+  const wasPlaying = !video.paused;
+  const originalTime = video.currentTime;
+  video.pause();
+  try {
+    const model = await ensureBlazeface();
+    const canvas = document.createElement('canvas');
+    canvas.width = state.videoWidth;
+    canvas.height = state.videoHeight;
+    const ctx = canvas.getContext('2d');
+
+    const sampleCount = 6;
+    const centers = [];
+    for (let i = 0; i < sampleCount; i++) {
+      els.faceDetectBtn.textContent = `scanning frame ${i + 1}/${sampleCount}…`;
+      const t = (state.duration * (i + 0.5)) / sampleCount;
+      await seekTo(video, t);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const preds = await model.estimateFaces(canvas, false);
+      if (preds.length) {
+        let best = preds[0], bestArea = 0;
+        for (const p of preds) {
+          const area = (p.bottomRight[0] - p.topLeft[0]) * (p.bottomRight[1] - p.topLeft[1]);
+          if (area > bestArea) { bestArea = area; best = p; }
+        }
+        centers.push((best.topLeft[0] + best.bottomRight[0]) / 2 / state.videoWidth);
+      }
+    }
+
+    video.currentTime = originalTime;
+    if (wasPlaying) video.play();
+
+    if (!centers.length) {
+      alert('No face detected in the sampled frames — crop position left unchanged.');
+      return;
+    }
+    const avgCenterRatio = centers.reduce((a, b) => a + b, 0) / centers.length;
+    const cropW = state.videoHeight * 9 / 16;
+    const maxX = state.videoWidth - cropW;
+    const faceCenterPx = avgCenterRatio * state.videoWidth;
+    const idealLeft = Math.max(0, Math.min(maxX, faceCenterPx - cropW / 2));
+    state.cropXRatio = maxX > 0 ? idealLeft / maxX : 0.5;
+    els.cropSlider.value = Math.round(state.cropXRatio * 100);
+    els.cropSlider.dispatchEvent(new Event('input'));
+  } catch (err) {
+    console.error(err);
+    alert(`Face detection failed: ${err.message || err}`);
+  } finally {
+    els.faceDetectBtn.disabled = false;
+    els.faceDetectBtn.textContent = originalLabel;
+  }
 });
 
 // ------------------------------------------------------------
@@ -389,6 +473,97 @@ function renderCaptionList() {
   }
 }
 renderCaptionList();
+
+// ------------------------------------------------------------
+// Auto-caption generation (Whisper, runs fully client-side —
+// no server, no API key. First use downloads the model.)
+// ------------------------------------------------------------
+async function decodeAudioForWhisper(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+  const targetRate = 16000;
+
+  let monoBuffer = audioBuffer;
+  if (audioBuffer.numberOfChannels > 1) {
+    monoBuffer = audioCtx.createBuffer(1, audioBuffer.length, audioBuffer.sampleRate);
+    const monoData = monoBuffer.getChannelData(0);
+    for (let i = 0; i < audioBuffer.length; i++) {
+      let sum = 0;
+      for (let c = 0; c < audioBuffer.numberOfChannels; c++) sum += audioBuffer.getChannelData(c)[i];
+      monoData[i] = sum / audioBuffer.numberOfChannels;
+    }
+  }
+
+  const offlineCtx = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * targetRate), targetRate);
+  const src = offlineCtx.createBufferSource();
+  src.buffer = monoBuffer;
+  src.connect(offlineCtx.destination);
+  src.start();
+  const rendered = await offlineCtx.startRendering();
+  audioCtx.close();
+  return rendered.getChannelData(0);
+}
+
+async function ensureTranscriber(progressCb) {
+  if (state.transcriber) return state.transcriber;
+  const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');
+  state.transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-small', {
+    progress_callback: progressCb,
+  });
+  return state.transcriber;
+}
+
+els.genCaptionsBtn.addEventListener('click', async () => {
+  if (!state.file) return;
+  els.genCaptionsBtn.disabled = true;
+  els.captionGenProgress.hidden = false;
+  els.captionGenFill.style.width = '0%';
+  els.captionGenLabel.textContent = 'preparing audio…';
+  try {
+    const audioData = await decodeAudioForWhisper(state.file);
+
+    els.captionGenLabel.textContent = 'loading speech model (first time only)…';
+    const transcriber = await ensureTranscriber((p) => {
+      if (p.status === 'progress' && p.total) {
+        const pct = Math.round((p.loaded / p.total) * 100);
+        els.captionGenFill.style.width = pct + '%';
+        els.captionGenLabel.textContent = `downloading model… ${pct}%`;
+      }
+    });
+
+    els.captionGenFill.style.width = '100%';
+    els.captionGenLabel.textContent = 'transcribing… this can take a while for longer clips';
+    const lang = els.captionLangSelect.value;
+    const result = await transcriber(audioData, {
+      return_timestamps: true,
+      chunk_length_s: 30,
+      stride_length_s: 5,
+      language: lang === 'auto' ? undefined : lang,
+      task: 'transcribe',
+    });
+
+    const chunks = result.chunks || [];
+    const generated = chunks
+      .filter(c => c.text && c.text.trim())
+      .map(c => ({
+        id: captionIdSeq++,
+        start: c.timestamp[0] ?? 0,
+        end: c.timestamp[1] ?? (c.timestamp[0] ?? 0) + 2,
+        text: c.text.trim(),
+      }));
+
+    state.captions = [...state.captions, ...generated].sort((a, b) => a.start - b.start);
+    renderCaptionList();
+    els.captionGenLabel.textContent = `done — ${generated.length} caption lines generated. Review and edit as needed.`;
+  } catch (err) {
+    console.error(err);
+    els.captionGenLabel.textContent = `failed: ${err.message || err}`;
+  } finally {
+    els.genCaptionsBtn.disabled = false;
+    setTimeout(() => { els.captionGenProgress.hidden = true; }, 3000);
+  }
+});
 
 // ------------------------------------------------------------
 // Time remapping: original timeline -> trimmed timeline
