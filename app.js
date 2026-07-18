@@ -18,6 +18,7 @@ const state = {
   segments: [],       // [{start,end,keep:boolean}]
   captions: [],        // [{id,start,end,text}]
   cropXRatio: 0.5,      // 0..1, center of crop window horizontally
+  trimEnabled: true,
   ffmpeg: null,
   ffmpegLoaded: false,
 };
@@ -41,6 +42,9 @@ const els = {
   threshLabel: $('threshLabel'),
   gapSlider: $('gapSlider'),
   gapLabel: $('gapLabel'),
+  trimToggle: $('trimToggle'),
+  trimToggleLabel: $('trimToggleLabel'),
+  trimControls: $('trimControls'),
   analyzeBtn: $('analyzeBtn'),
   spliceCanvas: $('spliceCanvas'),
   trimStats: $('trimStats'),
@@ -181,6 +185,13 @@ els.gapSlider.addEventListener('input', () => {
   els.gapLabel.textContent = `${els.gapSlider.value}s`;
 });
 els.analyzeBtn.addEventListener('click', analyzeSilence);
+
+els.trimToggle.addEventListener('change', () => {
+  state.trimEnabled = els.trimToggle.checked;
+  els.trimToggleLabel.textContent = state.trimEnabled ? 'ON' : 'OFF';
+  els.trimControls.classList.toggle('trim-controls-disabled', !state.trimEnabled);
+  updateTrimStats();
+});
 
 async function analyzeSilence() {
   if (!state.file) return;
@@ -329,6 +340,10 @@ els.spliceCanvas.addEventListener('click', (e) => {
 window.addEventListener('resize', () => { if (state.waveform) drawSpliceRuler(); });
 
 function updateTrimStats() {
+  if (!state.trimEnabled) {
+    els.trimStats.innerHTML = `<span>trim: <b>off</b> — full clip will render</span>`;
+    return;
+  }
   const kept = state.segments.filter(s => s.keep).reduce((a, s) => a + (s.end - s.start), 0);
   const cut = state.duration - kept;
   els.trimStats.innerHTML = `<span>kept: <b>${fmtTime(kept)}</b></span><span>cut: <b>${fmtTime(cut)}</b></span>`;
@@ -379,6 +394,7 @@ renderCaptionList();
 // Time remapping: original timeline -> trimmed timeline
 // ------------------------------------------------------------
 function buildKeepList() {
+  if (!state.trimEnabled) return [{ start: 0, end: state.duration }];
   const keep = state.segments.filter(s => s.keep).sort((a, b) => a.start - b.start);
   // merge touching/overlapping
   const merged = [];
