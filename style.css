@@ -180,6 +180,49 @@ main#app { max-width: 1180px; margin: 0 auto; padding: 0 1.5rem 4rem; position: 
   margin-bottom: 1rem;
 }
 
+.toggle-row {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.03em;
+}
+.toggle-row input[type="checkbox"] { display: none; }
+.toggle-switch {
+  position: relative;
+  width: 32px;
+  height: 16px;
+  background: var(--void);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink-dim);
+  transition: transform 0.15s, background 0.15s;
+}
+.toggle-row input:checked + .toggle-switch {
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px rgba(79,224,208,0.35);
+}
+.toggle-row input:checked + .toggle-switch::after {
+  transform: translateX(16px);
+  background: var(--cyan);
+}
+.toggle-row input:checked ~ #trimToggleLabel { color: var(--cyan); }
+
+.trim-controls-disabled { opacity: 0.4; pointer-events: none; }
+
 .chip {
   background: var(--void);
   border: 1px solid var(--cyan);
