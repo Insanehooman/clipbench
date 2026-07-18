@@ -292,6 +292,18 @@ main#app { max-width: 1180px; margin: 0 auto; padding: 0 1.5rem 4rem; position: 
 
 input[type="range"] { width: 100%; accent-color: var(--cyan); height: 3px; }
 
+select {
+  width: 100%;
+  background: var(--void);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 2px;
+}
+select:focus { outline: none; border-color: var(--cyan); }
+
 .splice-ruler-wrap { margin-top: 1rem; }
 #spliceCanvas { width: 100%; height: 72px; display: block; border-radius: 2px; border: 1px solid var(--line); cursor: pointer; }
 .hint { font-size: 0.74rem; color: var(--ink-dim); margin: 0.5rem 0 0; font-family: var(--mono); }
