@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -117,6 +117,11 @@
             </select>
           </div>
           <button class="btn btn-secondary" id="genCaptionsBtn">◈ Auto-generate captions (beta)</button>
+          <label class="toggle-row" style="margin: 0.6rem 0;">
+            <input type="checkbox" id="translateToEnglishToggle">
+            <span class="toggle-switch"></span>
+            <span>Translate speech to English captions</span>
+          </label>
           <div class="render-progress" id="captionGenProgress" hidden>
             <div class="progress-bar"><div class="progress-fill" id="captionGenFill"></div></div>
             <p class="progress-label" id="captionGenLabel"></p>
@@ -126,6 +131,48 @@
             <button class="btn btn-secondary" id="addCaptionBtn">+ mark caption at current time</button>
           </div>
           <div id="captionList" class="caption-list"></div>
+
+          <div class="translate-section">
+            <div class="panel-label" style="margin-top:1rem;"><span class="chip">SYS.03b</span> Translate captions</div>
+            <div class="control-row">
+              <label>From</label>
+              <select id="translateFromSelect">
+                <option value="english" selected>English</option>
+                <option value="hindi">Hindi</option>
+                <option value="tamil">Tamil</option>
+                <option value="telugu">Telugu</option>
+                <option value="bengali">Bengali</option>
+                <option value="marathi">Marathi</option>
+                <option value="gujarati">Gujarati</option>
+                <option value="kannada">Kannada</option>
+                <option value="malayalam">Malayalam</option>
+                <option value="punjabi">Punjabi</option>
+                <option value="urdu">Urdu</option>
+              </select>
+            </div>
+            <div class="control-row">
+              <label>To</label>
+              <select id="translateToSelect">
+                <option value="english">English</option>
+                <option value="hindi" selected>Hindi</option>
+                <option value="tamil">Tamil</option>
+                <option value="telugu">Telugu</option>
+                <option value="bengali">Bengali</option>
+                <option value="marathi">Marathi</option>
+                <option value="gujarati">Gujarati</option>
+                <option value="kannada">Kannada</option>
+                <option value="malayalam">Malayalam</option>
+                <option value="punjabi">Punjabi</option>
+                <option value="urdu">Urdu</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary" id="translateCaptionsBtn">⇄ Translate all captions</button>
+            <div class="render-progress" id="translateProgress" hidden>
+              <div class="progress-bar"><div class="progress-fill" id="translateFill"></div></div>
+              <p class="progress-label" id="translateLabel"></p>
+            </div>
+            <p class="hint">Rewrites the caption text in place — this overwrites what's currently in the list, so generate or finish editing captions first. Runs a separate translation model, also entirely in this tab.</p>
+          </div>
         </div>
 
         <div class="bench-panel render-panel">
@@ -173,6 +220,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.1.0/dist/blazeface.min.umd.js"></script>
-<script type="module" src="app.js?v=14"></script>
+<script type="module" src="app.js?v=15"></script>
 </body>
 </html>
