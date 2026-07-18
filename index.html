@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 
@@ -69,21 +69,30 @@
       <div class="bench-col bench-col--tools">
 
         <div class="bench-panel">
-          <div class="panel-label"><span class="chip">SYS.02</span> Trim dead air</div>
-          <div class="control-row">
-            <label>Silence threshold <span id="threshLabel">−35 dB</span></label>
-            <input type="range" id="threshSlider" min="-60" max="-15" value="-35">
+          <div class="panel-label">
+            <span class="chip">SYS.02</span> Trim dead air
+            <label class="toggle-row">
+              <input type="checkbox" id="trimToggle" checked>
+              <span class="toggle-switch"></span>
+              <span id="trimToggleLabel">ON</span>
+            </label>
           </div>
-          <div class="control-row">
-            <label>Minimum gap <span id="gapLabel">0.4s</span></label>
-            <input type="range" id="gapSlider" min="0.1" max="2" step="0.1" value="0.4">
+          <div id="trimControls">
+            <div class="control-row">
+              <label>Silence threshold <span id="threshLabel">−35 dB</span></label>
+              <input type="range" id="threshSlider" min="-60" max="-15" value="-35">
+            </div>
+            <div class="control-row">
+              <label>Minimum gap <span id="gapLabel">0.4s</span></label>
+              <input type="range" id="gapSlider" min="0.1" max="2" step="0.1" value="0.4">
+            </div>
+            <button class="btn btn-secondary" id="analyzeBtn">Scan for silence</button>
+            <div class="splice-ruler-wrap">
+              <canvas id="spliceCanvas" height="72"></canvas>
+              <p class="hint">Click a cut region to keep it. Kept = oak, cut = hatched red.</p>
+            </div>
+            <div class="stat-row" id="trimStats"></div>
           </div>
-          <button class="btn btn-secondary" id="analyzeBtn">Scan for silence</button>
-          <div class="splice-ruler-wrap">
-            <canvas id="spliceCanvas" height="72"></canvas>
-            <p class="hint">Click a cut region to keep it. Kept = oak, cut = hatched red.</p>
-          </div>
-          <div class="stat-row" id="trimStats"></div>
         </div>
 
         <div class="bench-panel">
@@ -129,6 +138,6 @@
   <p>Clipbench is a static page — host it anywhere (Netlify, Vercel, GitHub Pages, a plain S3 bucket). No backend, no video ever touches a server.</p>
 </footer>
 
-<script type="module" src="app.js?v=7"></script>
+<script type="module" src="app.js?v=8"></script>
 </body>
 </html>
