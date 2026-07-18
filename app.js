@@ -46,6 +46,7 @@ const els = {
   captionGenProgress: $('captionGenProgress'),
   captionGenFill: $('captionGenFill'),
   captionGenLabel: $('captionGenLabel'),
+  qualitySelect: $('qualitySelect'),
   threshSlider: $('threshSlider'),
   threshLabel: $('threshLabel'),
   gapSlider: $('gapSlider'),
@@ -688,6 +689,14 @@ async function render() {
     const keepList = buildKeepList();
     const selectExpr = keepList.map(s => `between(t,${s.start.toFixed(3)},${s.end.toFixed(3)})`).join('+');
 
+    const qualityPresets = {
+      high:     { width: 1080, height: 1920, crf: 18 },
+      balanced: { width: 1080, height: 1920, crf: 23 },
+      small:    { width: 720,  height: 1280, crf: 28 },
+    };
+    const quality = qualityPresets[els.qualitySelect.value] || qualityPresets.balanced;
+    const scaleFactor = quality.height / 1920;
+
     // crop geometry
     const isLandscape = state.videoWidth / state.videoHeight > 9 / 16;
     let cropFilter;
@@ -702,6 +711,10 @@ async function render() {
     }
 
     // captions -> drawtext chain, remapped to trimmed timeline
+    const fontSize = Math.max(20, Math.round(58 * scaleFactor));
+    const borderW = Math.max(2, Math.round(4 * scaleFactor));
+    const lineHeightPx = Math.round(67 * scaleFactor);
+    const bottomMargin = Math.round(280 * scaleFactor);
     let drawtextChain = '';
     for (const cap of state.captions) {
       if (!cap.text.trim()) continue;
@@ -711,13 +724,12 @@ async function render() {
       const rawLines = wrapCaptionText(cap.text.trim());
       const escapedLines = rawLines.map(l => escDrawtext(l));
       const multilineText = escapedLines.join('\\n');
-      const lineHeightPx = 67; // approx line height for fontsize 58
-      const yExpr = `h-${280 + (rawLines.length - 1) * lineHeightPx}`;
-      drawtextChain += `,drawtext=fontfile=font.ttf:text='${multilineText}':fontsize=58:fontcolor=white:borderw=4:bordercolor=black:line_spacing=6:x=(w-text_w)/2:y=${yExpr}:enable='between(t,${ms.toFixed(3)},${me.toFixed(3)})'`;
+      const yExpr = `h-${bottomMargin + (rawLines.length - 1) * lineHeightPx}`;
+      drawtextChain += `,drawtext=fontfile=font.ttf:text='${multilineText}':fontsize=${fontSize}:fontcolor=white:borderw=${borderW}:bordercolor=black:line_spacing=6:x=(w-text_w)/2:y=${yExpr}:enable='between(t,${ms.toFixed(3)},${me.toFixed(3)})'`;
     }
 
     const filterComplex =
-      `[0:v]select='${selectExpr}',setpts=N/FRAME_RATE/TB,${cropFilter}scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black${drawtextChain}[v];` +
+      `[0:v]select='${selectExpr}',setpts=N/FRAME_RATE/TB,${cropFilter}scale=${quality.width}:${quality.height}:force_original_aspect_ratio=decrease,pad=${quality.width}:${quality.height}:(ow-iw)/2:(oh-ih)/2:color=black${drawtextChain}[v];` +
       `[0:a]aselect='${selectExpr}',asetpts=N/SR/TB[a]`;
 
     els.progressLabel.textContent = 'rendering…';
@@ -725,7 +737,7 @@ async function render() {
       '-i', inputName,
       '-filter_complex', filterComplex,
       '-map', '[v]', '-map', '[a]',
-      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', String(quality.crf),
       '-c:a', 'aac', '-b:a', '128k',
       'output.mp4',
     ]);
